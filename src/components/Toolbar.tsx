@@ -11,7 +11,9 @@ import {
   Download, 
   Maximize2,
   Settings2,
-  Square
+  Square,
+  Circle as CircleIcon,
+  Minus
 } from 'lucide-react';
 import { Tool, DrawingOptions } from '../hooks/useCanvasDrawing';
 import { clsx, type ClassValue } from 'clsx';
@@ -48,6 +50,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
     { id: 'marker', icon: Type, label: 'Marker' },
     { id: 'highlighter', icon: Highlighter, label: 'Highlighter' },
     { id: 'eraser', icon: Eraser, label: 'Eraser' },
+    { id: 'circle', icon: CircleIcon, label: 'Circle' },
+    { id: 'rectangle', icon: Square, label: 'Rectangle' },
+    { id: 'line', icon: Minus, label: 'Line' },
   ];
 
   return (

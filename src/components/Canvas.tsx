@@ -15,6 +15,7 @@ const Canvas: React.FC = () => {
     canvasRef, 
     initCanvas, 
     draw, 
+    drawShape,
     undo, 
     redo, 
     clear, 
@@ -36,6 +37,7 @@ const Canvas: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [gestureCooldown, setGestureCooldown] = useState(false);
   const [showColorPalette, setShowColorPalette] = useState(false);
+  const [shapeStartPoint, setShapeStartPoint] = useState<Point | null>(null);
 
   // Initialize canvas on mount
   useEffect(() => {
@@ -88,11 +90,22 @@ const Canvas: React.FC = () => {
       const newPoints = [...pointsBuffer, currentPoint];
       const smoothed = smoothPoints(newPoints);
       
-      if (lastPoint) {
-        draw(lastPoint.x, lastPoint.y, smoothed.x, smoothed.y, options);
+      const isShapeTool = ['circle', 'rectangle', 'line'].includes(options.tool);
+
+      if (isShapeTool) {
+        if (!shapeStartPoint) {
+          setShapeStartPoint(currentPoint);
+        } else {
+          // Draw preview
+          drawShape(shapeStartPoint.x, shapeStartPoint.y, currentPoint.x, currentPoint.y, options, true);
+        }
+      } else {
+        if (lastPoint) {
+          draw(lastPoint.x, lastPoint.y, smoothed.x, smoothed.y, options);
+        }
+        setLastPoint(smoothed);
       }
       
-      setLastPoint(smoothed);
       setPointsBuffer(newPoints.slice(-5)); // Keep small buffer for smoothing
     } else if (gesture === 'two-finger') {
         // Erase mode
@@ -102,10 +115,11 @@ const Canvas: React.FC = () => {
         }
         setLastPoint(currentPoint);
     } else {
-      if (lastPoint) {
+      if (lastPoint || shapeStartPoint) {
         saveToHistory();
       }
       setLastPoint(null);
+      setShapeStartPoint(null);
       setPointsBuffer([]);
     }
 
@@ -123,8 +137,7 @@ const Canvas: React.FC = () => {
         setTimeout(() => setGestureCooldown(false), 2000);
       }
     }
-
-  }, [results, options, lastPoint, pointsBuffer, draw, saveToHistory, gestureCooldown, clear]);
+  }, [results, options, lastPoint, pointsBuffer, draw, drawShape, saveToHistory, gestureCooldown, clear, shapeStartPoint]);
 
   const handleSave = () => {
     const canvas = canvasRef.current;

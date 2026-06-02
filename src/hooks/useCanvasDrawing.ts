@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState } from 'react';
 
-export type Tool = 'pencil' | 'brush' | 'marker' | 'eraser' | 'highlighter';
+export type Tool = 'pencil' | 'brush' | 'marker' | 'eraser' | 'highlighter' | 'circle' | 'rectangle' | 'line';
 
 export interface DrawingOptions {
   color: string;
@@ -110,10 +110,52 @@ export const useCanvasDrawing = () => {
     ctx.shadowBlur = 0; // Reset shadow
   }, []);
 
+  const drawShape = useCallback((
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    options: DrawingOptions,
+    isPreview: boolean = false
+  ) => {
+    if (!contextRef.current || !canvasRef.current) return;
+    const ctx = contextRef.current;
+
+    if (isPreview) {
+      // Clear for preview (we need a way to restore the previous state)
+      // For simplicity in this hand-tracking context, we might use a separate preview layer
+      // or just redraw the previous history step before drawing the shape
+      ctx.putImageData(history[historyStep], 0, 0);
+    }
+
+    ctx.beginPath();
+    ctx.globalAlpha = options.opacity;
+    ctx.strokeStyle = options.color;
+    ctx.lineWidth = options.size;
+    ctx.globalCompositeOperation = 'source-over';
+
+    switch (options.tool) {
+      case 'circle':
+        const radius = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+        ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+        break;
+      case 'rectangle':
+        ctx.rect(startX, startY, endX - startX, endY - startY);
+        break;
+      case 'line':
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        break;
+    }
+
+    ctx.stroke();
+  }, [history, historyStep]);
+
   return {
     canvasRef,
     initCanvas,
     draw,
+    drawShape,
     undo,
     redo,
     clear,
