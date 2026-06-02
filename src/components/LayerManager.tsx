@@ -26,7 +26,7 @@ const LayerManager: React.FC<LayerManagerProps> = ({
   onToggleVisibility,
 }) => {
   return (
-    <div className="fixed right-6 top-24 w-64 glass rounded-3xl p-4 z-50 flex flex-col gap-4">
+    <div className="fixed right-6 bottom-24 w-64 glass rounded-3xl p-4 z-50 flex flex-col gap-4">
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
           <Layers size={18} />

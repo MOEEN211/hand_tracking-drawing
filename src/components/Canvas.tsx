@@ -14,7 +14,11 @@ import { jsPDF } from 'jspdf';
 
 const Canvas: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const results = useHandTracking(videoRef.current);
+  const results = useHandTracking(videoRef.current, {
+    maxNumHands: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.7
+  });
   const { 
     canvasRef, 
     initCanvas, 
@@ -82,18 +86,25 @@ const Canvas: React.FC = () => {
     const landmarks = results.multiHandLandmarks[0];
     const detectedGesture = detectGesture(landmarks);
     
-    // Stabilize gesture: require same gesture for 2 consecutive frames
-    const newHistory = [detectedGesture, ...gestureHistory].slice(0, 2);
+    // Stabilize gesture: require same gesture for 3 consecutive frames
+    const newHistory = [detectedGesture, ...gestureHistory].slice(0, 3);
     setGestureHistory(newHistory);
     
     const gesture = newHistory.every(g => g === newHistory[0]) ? newHistory[0] : currentGesture;
     setCurrentGesture(gesture);
 
-    // Index finger tip is landmark 8
+    // Mirror coordinates and scale to window
     const indexTip = landmarks[8];
-    const x = (1 - indexTip.x) * window.innerWidth; // Mirrored
-    const y = indexTip.y * window.innerHeight;
-    const currentPoint = new Point(x, y);
+    const rawX = (1 - indexTip.x) * window.innerWidth;
+    const rawY = indexTip.y * window.innerHeight;
+    
+    // Low-pass filter for coordinate jitter
+    const currentPoint = lastPoint 
+      ? new Point(
+          lastPoint.x * 0.4 + rawX * 0.6,
+          lastPoint.y * 0.4 + rawY * 0.6
+        )
+      : new Point(rawX, rawY);
 
     if (gesture === 'palm') {
       setIsPaused(true);
@@ -128,7 +139,7 @@ const Canvas: React.FC = () => {
         // Erase mode
         const eraseOptions = { ...options, tool: 'eraser' as const };
         if (lastPoint) {
-            draw(lastPoint.x, lastPoint.y, x, y, eraseOptions);
+            draw(lastPoint.x, lastPoint.y, currentPoint.x, currentPoint.y, eraseOptions);
         }
         setLastPoint(currentPoint);
     } else {
@@ -200,7 +211,7 @@ const Canvas: React.FC = () => {
         canRedo={canRedo}
       />
 
-      <WebcamPreview videoRef={videoRef} isMuted={true} />
+      <WebcamPreview videoRef={videoRef} isMuted={true} results={results} />
       
       <LayerManager
         layers={layers}

@@ -12,15 +12,23 @@ export const detectGesture = (landmarks: any[]): Gesture => {
   const middleTip = landmarks[12];
   const ringTip = landmarks[16];
   const pinkyTip = landmarks[20];
+  
+  // Landmark 0 is the wrist/palm base
+  const palmBase = landmarks[0];
 
   const thumbIndexDist = calculateDistance(thumbTip, indexTip);
   const indexMiddleDist = calculateDistance(indexTip, middleTip);
   const middleRingDist = calculateDistance(middleTip, ringTip);
   const ringPinkyDist = calculateDistance(ringTip, pinkyTip);
 
+  // Normalize distances relative to hand size (wrist to middle finger base is a good proxy)
+  const middleBase = landmarks[9];
+  const handSize = calculateDistance(palmBase, middleBase);
+  const normalizedThumbIndexDist = thumbIndexDist / handSize;
+
   // Pinch: Thumb and Index tips are close
-  // Increased threshold and added relative distance check for better stability
-  if (thumbIndexDist < 0.08) {
+  // Using normalized distance for better scale invariance
+  if (normalizedThumbIndexDist < 0.3) {
     return 'pinch';
   }
 

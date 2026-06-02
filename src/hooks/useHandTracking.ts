@@ -5,23 +5,25 @@ declare global {
   interface Window {
     Hands: any;
     Camera: any;
+    drawConnectors: any;
+    drawLandmarks: any;
+    HAND_CONNECTIONS: any;
   }
 }
 
 export type Results = any;
 
-export interface HandPoint {
-  x: number;
-  y: number;
-  z: number;
+export interface HandTrackingOptions {
+  maxNumHands?: number;
+  modelComplexity?: number;
+  minDetectionConfidence?: number;
+  minTrackingConfidence?: number;
 }
 
-export interface HandData {
-  landmarks: HandPoint[];
-  handedness: 'Left' | 'Right';
-}
-
-export const useHandTracking = (videoElement: HTMLVideoElement | null) => {
+export const useHandTracking = (
+  videoElement: HTMLVideoElement | null, 
+  options: HandTrackingOptions = {}
+) => {
   const [results, setResults] = useState<Results | null>(null);
   const handsRef = useRef<any>(null);
   const cameraRef = useRef<any>(null);
@@ -42,10 +44,10 @@ export const useHandTracking = (videoElement: HTMLVideoElement | null) => {
     });
 
     hands.setOptions({
-      maxNumHands: 2,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
+      maxNumHands: options.maxNumHands ?? 1,
+      modelComplexity: options.modelComplexity ?? 1,
+      minDetectionConfidence: options.minDetectionConfidence ?? 0.7,
+      minTrackingConfidence: options.minTrackingConfidence ?? 0.7,
     });
 
     hands.onResults((results: any) => {
@@ -69,7 +71,7 @@ export const useHandTracking = (videoElement: HTMLVideoElement | null) => {
       if (cameraRef.current) cameraRef.current.stop();
       if (handsRef.current) handsRef.current.close();
     };
-  }, [videoElement]);
+  }, [videoElement, options.maxNumHands, options.minDetectionConfidence, options.minTrackingConfidence]);
 
   return results;
 };
