@@ -44,6 +44,7 @@ const Canvas: React.FC = () => {
   const [lastPoint, setLastPoint] = useState<Point | null>(null);
   const [pointsBuffer, setPointsBuffer] = useState<Point[]>([]);
   const [currentGesture, setCurrentGesture] = useState<Gesture>('none');
+  const [gestureHistory, setGestureHistory] = useState<Gesture[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const [gestureCooldown, setGestureCooldown] = useState(false);
   const [showColorPalette, setShowColorPalette] = useState(false);
@@ -79,7 +80,13 @@ const Canvas: React.FC = () => {
     }
 
     const landmarks = results.multiHandLandmarks[0];
-    const gesture = detectGesture(landmarks);
+    const detectedGesture = detectGesture(landmarks);
+    
+    // Stabilize gesture: require same gesture for 2 consecutive frames
+    const newHistory = [detectedGesture, ...gestureHistory].slice(0, 2);
+    setGestureHistory(newHistory);
+    
+    const gesture = newHistory.every(g => g === newHistory[0]) ? newHistory[0] : currentGesture;
     setCurrentGesture(gesture);
 
     // Index finger tip is landmark 8
@@ -147,7 +154,7 @@ const Canvas: React.FC = () => {
         setTimeout(() => setGestureCooldown(false), 2000);
       }
     }
-  }, [results, options, lastPoint, pointsBuffer, draw, drawShape, saveToHistory, gestureCooldown, clear, shapeStartPoint]);
+  }, [results, options, lastPoint, pointsBuffer, draw, drawShape, saveToHistory, gestureCooldown, clear, shapeStartPoint, gestureHistory, currentGesture]);
 
   const handleSave = (format: 'png' | 'pdf') => {
     const canvas = canvasRef.current;

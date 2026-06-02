@@ -19,7 +19,8 @@ export const detectGesture = (landmarks: any[]): Gesture => {
   const ringPinkyDist = calculateDistance(ringTip, pinkyTip);
 
   // Pinch: Thumb and Index tips are close
-  if (thumbIndexDist < 0.05) {
+  // Increased threshold and added relative distance check for better stability
+  if (thumbIndexDist < 0.08) {
     return 'pinch';
   }
 
