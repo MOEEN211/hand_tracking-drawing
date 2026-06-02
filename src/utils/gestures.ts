@@ -1,12 +1,10 @@
-import { NormalizedLandmarkList } from '@mediapipe/hands';
-
 export type Gesture = 'none' | 'pinch' | 'palm' | 'two-finger' | 'three-finger' | 'four-finger';
 
 export const calculateDistance = (p1: any, p2: any) => {
   return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 };
 
-export const detectGesture = (landmarks: NormalizedLandmarkList): Gesture => {
+export const detectGesture = (landmarks: any[]): Gesture => {
   if (!landmarks || landmarks.length === 0) return 'none';
 
   const thumbTip = landmarks[4];

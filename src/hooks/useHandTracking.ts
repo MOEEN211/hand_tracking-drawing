@@ -1,6 +1,14 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { Hands, Results, HAND_CONNECTIONS } from '@mediapipe/hands';
-import { Camera } from '@mediapipe/camera_utils';
+import { useEffect, useRef, useState } from 'react';
+
+// Use the global MediaPipe objects from the script tags in index.html
+declare global {
+  interface Window {
+    Hands: any;
+    Camera: any;
+  }
+}
+
+export type Results = any;
 
 export interface HandPoint {
   x: number;
@@ -15,14 +23,20 @@ export interface HandData {
 
 export const useHandTracking = (videoElement: HTMLVideoElement | null) => {
   const [results, setResults] = useState<Results | null>(null);
-  const handsRef = useRef<Hands | null>(null);
-  const cameraRef = useRef<Camera | null>(null);
+  const handsRef = useRef<any>(null);
+  const cameraRef = useRef<any>(null);
 
   useEffect(() => {
     if (!videoElement) return;
 
-    const hands = new Hands({
-      locateFile: (file) => {
+    // Check if MediaPipe is loaded
+    if (!window.Hands || !window.Camera) {
+      console.error('MediaPipe not loaded yet');
+      return;
+    }
+
+    const hands = new window.Hands({
+      locateFile: (file: string) => {
         return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
       },
     });
@@ -34,11 +48,11 @@ export const useHandTracking = (videoElement: HTMLVideoElement | null) => {
       minTrackingConfidence: 0.5,
     });
 
-    hands.onResults((results) => {
+    hands.onResults((results: any) => {
       setResults(results);
     });
 
-    const camera = new Camera(videoElement, {
+    const camera = new window.Camera(videoElement, {
       onFrame: async () => {
         await hands.send({ image: videoElement });
       },
@@ -52,8 +66,8 @@ export const useHandTracking = (videoElement: HTMLVideoElement | null) => {
     camera.start();
 
     return () => {
-      camera.stop();
-      hands.close();
+      if (cameraRef.current) cameraRef.current.stop();
+      if (handsRef.current) handsRef.current.close();
     };
   }, [videoElement]);
 

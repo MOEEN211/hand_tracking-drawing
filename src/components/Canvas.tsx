@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useHandTracking } from '../hooks/useHandTracking';
-import { useCanvasDrawing, DrawingOptions } from '../hooks/useCanvasDrawing';
-import { detectGesture, Gesture } from '../utils/gestures';
+import { useCanvasDrawing } from '../hooks/useCanvasDrawing';
+import type { DrawingOptions } from '../types/drawing';
+import { detectGesture } from '../utils/gestures';
+import type { Gesture } from '../utils/gestures';
 import { Point, smoothPoints } from '../utils/smoothing';
 import Toolbar from './Toolbar';
 import WebcamPreview from './WebcamPreview';

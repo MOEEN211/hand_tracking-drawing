@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layers, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
-import { Layer } from '../hooks/useCanvasDrawing';
+import type { Layer } from '../types/drawing';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

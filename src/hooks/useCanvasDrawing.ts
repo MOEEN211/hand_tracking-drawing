@@ -1,20 +1,5 @@
 import { useRef, useCallback, useState } from 'react';
-
-export type Tool = 'pencil' | 'brush' | 'marker' | 'eraser' | 'highlighter' | 'circle' | 'rectangle' | 'line';
-
-export interface DrawingOptions {
-  color: string;
-  size: number;
-  opacity: number;
-  tool: Tool;
-}
-
-export interface Layer {
-  id: string;
-  name: string;
-  visible: boolean;
-  opacity: number;
-}
+import type { Tool, DrawingOptions, Layer } from '../types/drawing';
 
 export const useCanvasDrawing = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -152,9 +137,6 @@ export const useCanvasDrawing = () => {
     const ctx = contextRef.current;
 
     if (isPreview) {
-      // Clear for preview (we need a way to restore the previous state)
-      // For simplicity in this hand-tracking context, we might use a separate preview layer
-      // or just redraw the previous history step before drawing the shape
       ctx.putImageData(history[historyStep], 0, 0);
     }
 

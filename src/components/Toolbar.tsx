@@ -17,7 +17,7 @@ import {
   FileText,
   Image as ImageIcon
 } from 'lucide-react';
-import { Tool, DrawingOptions } from '../hooks/useCanvasDrawing';
+import type { Tool, DrawingOptions } from '../types/drawing';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
