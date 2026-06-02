@@ -6,6 +6,7 @@ import { Point, smoothPoints } from '../utils/smoothing';
 import Toolbar from './Toolbar';
 import WebcamPreview from './WebcamPreview';
 import ThemeToggle from './ThemeToggle';
+import LayerManager from './LayerManager';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Canvas: React.FC = () => {
@@ -19,7 +20,13 @@ const Canvas: React.FC = () => {
     undo, 
     redo, 
     clear, 
-    saveToHistory, 
+    saveToHistory,
+    layers,
+    activeLayerId,
+    setActiveLayerId,
+    addLayer,
+    removeLayer,
+    toggleLayerVisibility,
     canUndo, 
     canRedo 
   } = useCanvasDrawing();
@@ -173,6 +180,15 @@ const Canvas: React.FC = () => {
       />
 
       <WebcamPreview videoRef={videoRef} isMuted={true} />
+      
+      <LayerManager
+        layers={layers}
+        activeLayerId={activeLayerId}
+        onSetActive={setActiveLayerId}
+        onAdd={addLayer}
+        onRemove={removeLayer}
+        onToggleVisibility={toggleLayerVisibility}
+      />
       
       <ThemeToggle />
 

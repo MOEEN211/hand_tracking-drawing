@@ -9,11 +9,22 @@ export interface DrawingOptions {
   tool: Tool;
 }
 
+export interface Layer {
+  id: string;
+  name: string;
+  visible: boolean;
+  opacity: number;
+}
+
 export const useCanvasDrawing = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const [history, setHistory] = useState<ImageData[]>([]);
   const [historyStep, setHistoryStep] = useState(-1);
+  const [layers, setLayers] = useState<Layer[]>([
+    { id: '1', name: 'Background', visible: true, opacity: 1 }
+  ]);
+  const [activeLayerId, setActiveLayerId] = useState('1');
 
   const initCanvas = useCallback((canvas: HTMLCanvasElement) => {
     canvasRef.current = canvas;
@@ -62,6 +73,25 @@ export const useCanvasDrawing = () => {
       saveToHistory();
     }
   }, [saveToHistory]);
+
+  const addLayer = useCallback(() => {
+    const newId = Math.random().toString(36).substr(2, 9);
+    setLayers(prev => [...prev, { id: newId, name: `Layer ${prev.length + 1}`, visible: true, opacity: 1 }]);
+    setActiveLayerId(newId);
+  }, []);
+
+  const removeLayer = useCallback((id: string) => {
+    if (layers.length > 1) {
+      setLayers(prev => prev.filter(l => l.id !== id));
+      if (activeLayerId === id) {
+        setActiveLayerId(layers[0].id);
+      }
+    }
+  }, [activeLayerId, layers]);
+
+  const toggleLayerVisibility = useCallback((id: string) => {
+    setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
+  }, []);
 
   const draw = useCallback((
     fromX: number, 
@@ -160,6 +190,12 @@ export const useCanvasDrawing = () => {
     redo,
     clear,
     saveToHistory,
+    layers,
+    activeLayerId,
+    setActiveLayerId,
+    addLayer,
+    removeLayer,
+    toggleLayerVisibility,
     canUndo: historyStep > 0,
     canRedo: historyStep < history.length - 1
   };
