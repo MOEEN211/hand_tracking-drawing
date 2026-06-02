@@ -8,6 +8,7 @@ import WebcamPreview from './WebcamPreview';
 import ThemeToggle from './ThemeToggle';
 import LayerManager from './LayerManager';
 import { motion, AnimatePresence } from 'framer-motion';
+import { jsPDF } from 'jspdf';
 
 const Canvas: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -146,13 +147,24 @@ const Canvas: React.FC = () => {
     }
   }, [results, options, lastPoint, pointsBuffer, draw, drawShape, saveToHistory, gestureCooldown, clear, shapeStartPoint]);
 
-  const handleSave = () => {
+  const handleSave = (format: 'png' | 'pdf') => {
     const canvas = canvasRef.current;
     if (canvas) {
-      const link = document.createElement('a');
-      link.download = 'hand-draw-studio.png';
-      link.href = canvas.toDataURL();
-      link.click();
+      if (format === 'png') {
+        const link = document.createElement('a');
+        link.download = 'hand-draw-studio.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      } else if (format === 'pdf') {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+        });
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('hand-draw-studio.pdf');
+      }
     }
   };
 

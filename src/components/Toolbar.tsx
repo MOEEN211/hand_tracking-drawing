@@ -13,7 +13,9 @@ import {
   Settings2,
   Square,
   Circle as CircleIcon,
-  Minus
+  Minus,
+  FileText,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Tool, DrawingOptions } from '../hooks/useCanvasDrawing';
 import { clsx, type ClassValue } from 'clsx';
@@ -29,7 +31,7 @@ interface ToolbarProps {
   onUndo: () => void;
   onRedo: () => void;
   onClear: () => void;
-  onSave: () => void;
+  onSave: (format: 'png' | 'pdf') => void;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -141,11 +143,18 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Trash2 size={20} />
         </button>
         <button
-          onClick={onSave}
+          onClick={() => onSave('png')}
           className="p-3 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
           title="Save as PNG"
         >
-          <Download size={20} />
+          <ImageIcon size={20} />
+        </button>
+        <button
+          onClick={() => onSave('pdf')}
+          className="p-3 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+          title="Save as PDF"
+        >
+          <FileText size={20} />
         </button>
         <button
           onClick={() => {
