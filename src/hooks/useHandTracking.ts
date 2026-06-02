@@ -56,7 +56,10 @@ export const useHandTracking = (
 
     const camera = new window.Camera(videoElement, {
       onFrame: async () => {
-        await hands.send({ image: videoElement });
+        // Optimization: only send frame if the window is visible
+        if (document.visibilityState === 'visible') {
+          await hands.send({ image: videoElement });
+        }
       },
       width: 640,
       height: 480,

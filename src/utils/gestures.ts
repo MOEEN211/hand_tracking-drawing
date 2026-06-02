@@ -4,8 +4,13 @@ export const calculateDistance = (p1: any, p2: any) => {
   return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 };
 
-export const detectGesture = (landmarks: any[]): Gesture => {
-  if (!landmarks || landmarks.length === 0) return 'none';
+export type GestureInfo = {
+  type: Gesture;
+  confidence: number; // 0 to 1
+};
+
+export const detectGesture = (landmarks: any[]): GestureInfo => {
+  if (!landmarks || landmarks.length === 0) return { type: 'none', confidence: 0 };
 
   const thumbTip = landmarks[4];
   const indexTip = landmarks[8];
@@ -13,52 +18,35 @@ export const detectGesture = (landmarks: any[]): Gesture => {
   const ringTip = landmarks[16];
   const pinkyTip = landmarks[20];
   
-  // Landmark 0 is the wrist/palm base
   const palmBase = landmarks[0];
+  const middleBase = landmarks[9];
 
   const thumbIndexDist = calculateDistance(thumbTip, indexTip);
-  const indexMiddleDist = calculateDistance(indexTip, middleTip);
-  const middleRingDist = calculateDistance(middleTip, ringTip);
-  const ringPinkyDist = calculateDistance(ringTip, pinkyTip);
-
-  // Normalize distances relative to hand size (wrist to middle finger base is a good proxy)
-  const middleBase = landmarks[9];
   const handSize = calculateDistance(palmBase, middleBase);
   const normalizedThumbIndexDist = thumbIndexDist / handSize;
 
-  // Pinch: Thumb and Index tips are close
-  // Using normalized distance for better scale invariance
+  // Linear mapping for pinch confidence
+  // If dist < 0.2, confidence is 1. If dist > 0.6, confidence is 0.
+  const pinchConfidence = Math.max(0, Math.min(1, (0.6 - normalizedThumbIndexDist) / 0.4));
+
   if (normalizedThumbIndexDist < 0.3) {
-    return 'pinch';
+    return { type: 'pinch', confidence: pinchConfidence };
   }
 
-  // Open Palm: All fingers are extended (checking distances from palm base is better but simple check here)
-  const isFingerExtended = (tip: any, pip: any) => tip.y < pip.y; // Simplified
-  
+  // Check for other gestures...
+  const isFingerExtended = (tip: any, pip: any) => tip.y < pip.y;
   const indexExtended = isFingerExtended(landmarks[8], landmarks[6]);
   const middleExtended = isFingerExtended(landmarks[12], landmarks[10]);
   const ringExtended = isFingerExtended(landmarks[16], landmarks[14]);
   const pinkyExtended = isFingerExtended(landmarks[20], landmarks[18]);
 
   if (indexExtended && middleExtended && ringExtended && pinkyExtended) {
-    return 'palm';
+    return { type: 'palm', confidence: 1 };
   }
 
-  // Four fingers extended
-  if (indexExtended && middleExtended && ringExtended && pinkyExtended && !isFingerExtended(landmarks[4], landmarks[2])) {
-     // Wait, thumb is 4. If index, middle, ring, pinky are extended.
-     return 'four-finger';
-  }
-
-  // Three fingers extended
-  if (indexExtended && middleExtended && ringExtended && !pinkyExtended) {
-    return 'three-finger';
-  }
-
-  // Two fingers extended
   if (indexExtended && middleExtended && !ringExtended && !pinkyExtended) {
-    return 'two-finger';
+    return { type: 'two-finger', confidence: 1 };
   }
 
-  return 'none';
+  return { type: 'none', confidence: 0 };
 };

@@ -3,8 +3,8 @@ import { useHandTracking } from '../hooks/useHandTracking';
 import { useCanvasDrawing } from '../hooks/useCanvasDrawing';
 import type { DrawingOptions } from '../types/drawing';
 import { detectGesture } from '../utils/gestures';
-import type { Gesture } from '../utils/gestures';
-import { Point, smoothPoints } from '../utils/smoothing';
+import type { Gesture, GestureInfo } from '../utils/gestures';
+import { Point, OneEuroFilter } from '../utils/smoothing';
 import Toolbar from './Toolbar';
 import WebcamPreview from './WebcamPreview';
 import ThemeToggle from './ThemeToggle';
@@ -48,7 +48,13 @@ const Canvas: React.FC = () => {
   const [lastPoint, setLastPoint] = useState<Point | null>(null);
   const [pointsBuffer, setPointsBuffer] = useState<Point[]>([]);
   const [currentGesture, setCurrentGesture] = useState<Gesture>('none');
+  const [pinchConfidence, setPinchConfidence] = useState(0);
   const [gestureHistory, setGestureHistory] = useState<Gesture[]>([]);
+  
+  // Persistent filters
+  const filterX = useRef(new OneEuroFilter(2.0, 0.01));
+  const filterY = useRef(new OneEuroFilter(2.0, 0.01));
+
   const [isPaused, setIsPaused] = useState(false);
   const [gestureCooldown, setGestureCooldown] = useState(false);
   const [showColorPalette, setShowColorPalette] = useState(false);
@@ -84,7 +90,9 @@ const Canvas: React.FC = () => {
     }
 
     const landmarks = results.multiHandLandmarks[0];
-    const detectedGesture = detectGesture(landmarks);
+    const gestureInfo: GestureInfo = detectGesture(landmarks);
+    const detectedGesture = gestureInfo.type;
+    setPinchConfidence(gestureInfo.confidence);
     
     // Stabilize gesture: require same gesture for 3 consecutive frames
     const newHistory = [detectedGesture, ...gestureHistory].slice(0, 3);
@@ -98,13 +106,11 @@ const Canvas: React.FC = () => {
     const rawX = (1 - indexTip.x) * window.innerWidth;
     const rawY = indexTip.y * window.innerHeight;
     
-    // Low-pass filter for coordinate jitter
-    const currentPoint = lastPoint 
-      ? new Point(
-          lastPoint.x * 0.4 + rawX * 0.6,
-          lastPoint.y * 0.4 + rawY * 0.6
-        )
-      : new Point(rawX, rawY);
+    // Use OneEuroFilter for high-precision smoothing
+    const currentPoint = new Point(
+      filterX.current.filter(rawX),
+      filterY.current.filter(rawY)
+    );
 
     if (gesture === 'palm') {
       setIsPaused(true);
@@ -116,7 +122,6 @@ const Canvas: React.FC = () => {
 
     if (gesture === 'pinch') {
       const newPoints = [...pointsBuffer, currentPoint];
-      const smoothed = smoothPoints(newPoints);
       
       const isShapeTool = ['circle', 'rectangle', 'line'].includes(options.tool);
 
@@ -129,12 +134,12 @@ const Canvas: React.FC = () => {
         }
       } else {
         if (lastPoint) {
-          draw(lastPoint.x, lastPoint.y, smoothed.x, smoothed.y, options);
+          draw(lastPoint.x, lastPoint.y, currentPoint.x, currentPoint.y, options);
         }
-        setLastPoint(smoothed);
+        setLastPoint(currentPoint);
       }
       
-      setPointsBuffer(newPoints.slice(-5)); // Keep small buffer for smoothing
+      setPointsBuffer(newPoints.slice(-5)); // Keep small buffer for history if needed
     } else if (gesture === 'two-finger') {
         // Erase mode
         const eraseOptions = { ...options, tool: 'eraser' as const };
@@ -297,14 +302,36 @@ const Canvas: React.FC = () => {
       {/* Visual Feedback for cursor */}
       {results?.multiHandLandmarks?.[0] && !isPaused && (
         <div 
-          className="fixed pointer-events-none z-50 w-6 h-6 border-2 border-white rounded-full mix-blend-difference"
+          className="fixed pointer-events-none z-50 flex items-center justify-center"
           style={{
-            left: (1 - results.multiHandLandmarks[0][8].x) * window.innerWidth - 12,
-            top: results.multiHandLandmarks[0][8].y * window.innerHeight - 12,
-            backgroundColor: currentGesture === 'pinch' ? options.color : 'transparent',
-            boxShadow: '0 0 10px rgba(255,255,255,0.5)'
+            left: (1 - results.multiHandLandmarks[0][8].x) * window.innerWidth - 30,
+            top: results.multiHandLandmarks[0][8].y * window.innerHeight - 30,
+            width: 60,
+            height: 60,
           }}
-        />
+        >
+          {/* Pre-pinch indicator: ring that shrinks as you pinch */}
+          <div 
+            className="absolute border-2 border-white rounded-full opacity-50"
+            style={{
+              width: 20 + (1 - pinchConfidence) * 40,
+              height: 20 + (1 - pinchConfidence) * 40,
+              borderColor: pinchConfidence > 0.8 ? options.color : 'white',
+              borderWidth: pinchConfidence > 0.8 ? 4 : 2,
+              transition: 'all 0.1s ease-out'
+            }}
+          />
+          
+          {/* Main cursor dot */}
+          <div 
+            className="w-3 h-3 rounded-full shadow-lg"
+            style={{
+              backgroundColor: currentGesture === 'pinch' ? options.color : 'white',
+              transform: `scale(${currentGesture === 'pinch' ? 1.5 : 1})`,
+              transition: 'transform 0.1s ease-out'
+            }}
+          />
+        </div>
       )}
     </div>
   );
